@@ -1,0 +1,112 @@
+# AI Legislative Analyzer
+
+ An end-to-end web app that helps citizens understand Indian legislative PDFs using retrieval + citation-aware generation, with multilingual output.
+
+## What it does
+- Upload a legislative PDF (Act/Bill/Policy).
+- The backend extracts text, chunks it by structure, compresses the context, and indexes it.
+- You ask a question (“What does this law mean for me?”) and the system retrieves the most relevant clauses and generates a simple explanation with citations.
+- Output can be translated to an Indian language (English-in, localized-out).
+
+## Demo flow (recommended for judges)
+1. Open the app.
+2. Complete the citizen profile (profession/education/region).
+3. Upload a PDF.
+4. Ask 2–3 questions (e.g., obligations, penalties, definitions).
+5. Switch output language and ask again.
+
+## Key features
+- **Hybrid retrieval**: semantic + BM25 + RRF fusion for better clause matching.
+- **Token optimization**: compresses retrieved context to keep prompts small.
+- **Citation-aware answers**: prompts the model to end factual sentences with citations.
+- **Guardrails**: if the model fails / times out, the API still returns a useful clause-based fallback.
+- **Citizen personalization**: explanation style adapts to profile fields.
+
+## Measurable results (token compression)
+These numbers are produced by the pipeline and stored with each uploaded document.
+
+- Example: “IT Act 2000 Updated”
+  - Original tokens: **25,926**
+  - Compressed tokens: **2,394**
+  - Tokens saved: **23,532**
+  - Compression: **90.77%** (≈ **10.83×** smaller prompt footprint)
+
+Tip: after running queries, you can inspect latency instrumentation via `GET /metrics/latency`.
+
+## Tech stack
+- **Backend**: FastAPI (Python)
+- **Frontend**: React + Vite
+- **Vector store**: ChromaDB (local persistent store)
+- **Embeddings**: `sentence-transformers/all-MiniLM-L6-v2`
+- **LLM**: Google Gemini (default) or OpenAI (configurable)
+- **Translation**: `deep-translator`
+
+## Repository structure
+```
+ai-legislative-analyzer/
+  backend/                 # FastAPI API + pipelines
+    main.py
+    services/
+    data/                  # lightweight JSON state (documents registry, etc.)
+  frontend/                # React UI
+  RUN.md                   # quick run notes
+  README.md                # this file
+```
+
+## Setup (Windows / PowerShell)
+### Prerequisites
+- Python 3.10+ (recommended)
+- Node.js 18+
+- A Gemini or OpenAI API key
+
+### 1) Backend
+From the repo root:
+```powershell
+# create + activate venv (if you don't already have one)
+python -m venv .venv
+& .\.venv\Scripts\Activate.ps1
+
+# install backend deps
+pip install -r backend\requirements.txt
+
+# run the API
+python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000
+```
+The API will be available at `http://127.0.0.1:8000`.
+
+### 2) Frontend
+In a second terminal:
+```powershell
+cd frontend
+npm install
+npm run dev -- --port 3000
+```
+Open `http://localhost:3000`.
+
+The frontend proxies `/api/*` → `http://localhost:8000/*` via Vite.
+
+## Environment variables
+Create a `.env` file (repo root) or set env vars in your shell.
+
+Required (pick one provider):
+- `AI_PROVIDER=google` and `GOOGLE_API_KEY=...`
+- OR `AI_PROVIDER=openai` and `OPENAI_API_KEY=...`
+
+Optional tuning:
+- `LLM_TIMEOUT_SECONDS` (default `20`)
+- `NLI_TIMEOUT_SECONDS` (default `1.5`)
+- `CITATION_RETRY_THRESHOLD` (default `0.6`)
+- `CITATION_HARD_BLOCK_THRESHOLD` (default `0.2`)
+
+## Notes / troubleshooting
+- **First run downloads models**: `sentence-transformers` and (optionally) the NLI verifier may download weights on first use.
+- **If the LLM is unavailable** (no key, network, timeout), the API returns a clause-based fallback so you still get an answer.
+- This tool provides **explanations**, not legal advice.
+
+## API quick check
+- Health: `GET /health`
+- Upload: `POST /upload` (multipart)
+- Ask: `POST /query`
+
+---
+If you want, tell me your hackathon’s judging criteria (max 3 bullets) and I’ll tailor the README’s “Why this matters” section to match it (without changing the app).
