@@ -21,6 +21,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { useUser } from '../context/UserContext'
 import { INDIAN_LANGUAGES } from '../services/translationService'
+import { apiUrl } from '../services/api'
 
 const numberFormatter = new Intl.NumberFormat('en-IN')
 const timeFormatter = new Intl.DateTimeFormat('en-IN', {
@@ -126,7 +127,6 @@ export default function AnalysisPage() {
       window.clearInterval(intervalId)
     }
   }, [activeDocumentId])
-
   useEffect(() => {
     if (routeDocumentId) {
       setActiveDocumentId(routeDocumentId)
@@ -136,7 +136,7 @@ export default function AnalysisPage() {
   async function loadDocuments(preferredDocumentId = null) {
     setLoadingDocuments(true)
     try {
-      const response = await fetch('/api/documents')
+      const response = await fetch(apiUrl('/documents'))
       const data = await response.json()
 
       if (!response.ok) {
@@ -170,7 +170,7 @@ export default function AnalysisPage() {
 
   async function loadIngestionStatus() {
     try {
-      const response = await fetch('/api/ingestion/status')
+      const response = await fetch(apiUrl('/ingestion/status'))
       const data = await response.json()
 
       if (response.ok) {
@@ -187,7 +187,7 @@ export default function AnalysisPage() {
     setStatusMessage('Syncing official policy feeds and refreshing the dashboard...')
 
     try {
-      const response = await fetch('/api/ingestion/run', {
+      const response = await fetch(apiUrl('/ingestion/run'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       })
@@ -227,7 +227,7 @@ export default function AnalysisPage() {
     setError(null)
 
     try {
-      const response = await fetch('/api/query', {
+      const response = await fetch(apiUrl('/query'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -272,7 +272,7 @@ export default function AnalysisPage() {
     formData.append('user_profile_json', JSON.stringify(userProfile || {}))
 
     try {
-      const response = await fetch('/api/upload', {
+      const response = await fetch(apiUrl('/upload'), {
         method: 'POST',
         body: formData,
       })
