@@ -124,6 +124,14 @@ def compute_citation_coverage(answer_text: str) -> Dict[str, Any]:
 def sanitize_user_response(payload: Dict[str, Any]) -> Dict[str, Any]:
     sanitized_payload = dict(payload or {})
     sanitized_payload.pop("flagged_sentences", None)
+    explanation_text = sanitized_payload.get("explanation")
+    if isinstance(explanation_text, str):
+        sanitized_payload["explanation"] = normalize_explanation_text(explanation_text)
+
+    english_text = sanitized_payload.get("explanation_english")
+    if isinstance(english_text, str):
+        sanitized_payload["explanation_english"] = normalize_explanation_text(english_text)
+
     return sanitized_payload
 
 
@@ -134,6 +142,36 @@ def normalize_language_code(language_code: str) -> str:
     if "-" in normalized_code:
         normalized_code = normalized_code.split("-", 1)[0]
     return normalized_code or "en"
+
+
+def normalize_explanation_text(text: str) -> str:
+    """Flatten markdown-heavy model output into plain, readable text."""
+    normalized_text = (text or "").replace("\r\n", "\n").replace("\r", "\n")
+    if not normalized_text.strip():
+        return ""
+
+    normalized_text = re.sub(r"^\s*```[a-zA-Z0-9_-]*\s*$", "", normalized_text, flags=re.MULTILINE)
+    normalized_text = re.sub(r"^\s*```\s*$", "", normalized_text, flags=re.MULTILINE)
+
+    cleaned_lines = []
+    for raw_line in normalized_text.split("\n"):
+        line = raw_line.strip()
+        if not line:
+            cleaned_lines.append("")
+            continue
+
+        line = re.sub(r"^>+\s*", "", line)
+        line = re.sub(r"^#{1,6}\s*", "", line)
+        line = re.sub(r"^(?:[-*+]\s+|\d+[.)]\s+)", "", line)
+        line = re.sub(r"\*\*(.*?)\*\*", r"\1", line)
+        line = re.sub(r"__(.*?)__", r"\1", line)
+        line = line.replace("`", "")
+
+        cleaned_lines.append(line)
+
+    cleaned_text = "\n".join(cleaned_lines)
+    cleaned_text = re.sub(r"\n{3,}", "\n\n", cleaned_text)
+    return cleaned_text.strip()
 
 
 def _calculate_p95(latencies: list[float]) -> float:
@@ -337,9 +375,6 @@ async def query_legislature(
         if not normalized_query:
             raise HTTPException(status_code=400, detail="Query cannot be empty.")
 
-        # Preserve compatibility for older clients sending output_language.
-        _ = output_language
-
         detected_language_code = "en"
         try:
             detected_language_code = normalize_language_code(detect(normalized_query))
@@ -348,7 +383,12 @@ async def query_legislature(
         except Exception:
             detected_language_code = "en"
 
-        language_code = detected_language_code
+        requested_language_code = normalize_language_code(output_language)
+        language_code = (
+            requested_language_code
+            if ai_engine.is_supported_language(requested_language_code)
+            else "en"
+        )
         output_language_name = (
             ai_engine.get_language_name(language_code)
             if ai_engine.is_supported_language(language_code)
@@ -356,19 +396,28 @@ async def query_legislature(
         )
 
         # Retrieval and LLM generation always run in English.
+        # If user selects a non-English output language, use it as a source-language hint.
         query_for_retrieval = normalized_query
         if detected_language_code != "en":
+            translation_source = language_code if language_code != "en" else "auto"
             try:
-                translated_query = GoogleTranslator(source="auto", target="en").translate(normalized_query)
+                translated_query = GoogleTranslator(source=translation_source, target="en").translate(normalized_query)
                 query_for_retrieval = translated_query or normalized_query
             except Exception:
-                query_for_retrieval = normalized_query
+                if translation_source != "auto":
+                    try:
+                        translated_query = GoogleTranslator(source="auto", target="en").translate(normalized_query)
+                        query_for_retrieval = translated_query or normalized_query
+                    except Exception:
+                        query_for_retrieval = normalized_query
+                else:
+                    query_for_retrieval = normalized_query
 
         def translate_from_english_if_required(text: str) -> str:
-            if detected_language_code == "en":
+            if language_code == "en":
                 return text
             try:
-                translated_text = GoogleTranslator(source="en", target=detected_language_code).translate(text)
+                translated_text = GoogleTranslator(source="en", target=language_code).translate(text)
                 return translated_text or text
             except Exception:
                 return text
@@ -540,7 +589,7 @@ async def query_legislature(
             fallback_response["latency_ms"] = round(elapsed_ms, 2)
             return sanitize_user_response(fallback_response)
 
-        explanation_english = result["explanation"]
+        explanation_english = normalize_explanation_text(result["explanation"])
 
         citation_check = compute_citation_coverage(explanation_english)
         citation_retry_triggered = False
@@ -600,7 +649,7 @@ async def query_legislature(
                 fallback_response["latency_ms"] = round(elapsed_ms, 2)
                 return sanitize_user_response(fallback_response)
 
-            explanation_english = retry_result["explanation"]
+            explanation_english = normalize_explanation_text(retry_result["explanation"])
             result = retry_result
             citation_check = compute_citation_coverage(explanation_english)
 
@@ -718,7 +767,9 @@ async def query_legislature(
 
             return sanitize_user_response(blocked_response)
 
-        translated_explanation = translate_from_english_if_required(explanation_english)
+        translated_explanation = normalize_explanation_text(
+            translate_from_english_if_required(explanation_english)
+        )
         
         all_refs = ref_detector.detect_references(explanation_english)
         chapter_references = list(dict.fromkeys(c["metadata"]["chapter"] for c in prompt_context))

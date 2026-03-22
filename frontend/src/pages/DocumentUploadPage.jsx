@@ -11,7 +11,6 @@ import {
 } from 'lucide-react'
 import { useUser } from '../context/UserContext'
 import { INDIAN_LANGUAGES } from '../services/translationService'
-import { apiUrl } from '../services/api'
 import '../styles/pages.css'
 
 const languageChoices = Object.entries(INDIAN_LANGUAGES).map(([code, label]) => ({
@@ -64,7 +63,7 @@ export default function DocumentUploadPage() {
 
     if (!userProfile.name) {
       setError('Please complete your profile first')
-      xhr.open('POST', apiUrl('/upload'))
+      navigate('/profile')
       return
     }
 
@@ -118,7 +117,7 @@ export default function DocumentUploadPage() {
         setUploading(false)
       })
 
-      xhr.open('POST', apiUrl('/upload'))
+      xhr.open('POST', '/api/upload')
       xhr.send(formData)
     } catch (err) {
       setError(err.message || 'An error occurred during upload')

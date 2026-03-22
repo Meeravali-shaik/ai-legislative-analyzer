@@ -21,7 +21,6 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useTranslation } from 'react-i18next'
 import { useUser } from '../context/UserContext'
 import { INDIAN_LANGUAGES } from '../services/translationService'
-import { apiUrl } from '../services/api'
 
 const numberFormatter = new Intl.NumberFormat('en-IN')
 const timeFormatter = new Intl.DateTimeFormat('en-IN', {
@@ -127,6 +126,7 @@ export default function AnalysisPage() {
       window.clearInterval(intervalId)
     }
   }, [activeDocumentId])
+
   useEffect(() => {
     if (routeDocumentId) {
       setActiveDocumentId(routeDocumentId)
@@ -136,7 +136,7 @@ export default function AnalysisPage() {
   async function loadDocuments(preferredDocumentId = null) {
     setLoadingDocuments(true)
     try {
-      const response = await fetch(apiUrl('/documents'))
+      const response = await fetch('/api/documents')
       const data = await response.json()
 
       if (!response.ok) {
@@ -170,7 +170,7 @@ export default function AnalysisPage() {
 
   async function loadIngestionStatus() {
     try {
-      const response = await fetch(apiUrl('/ingestion/status'))
+      const response = await fetch('/api/ingestion/status')
       const data = await response.json()
 
       if (response.ok) {
@@ -187,7 +187,7 @@ export default function AnalysisPage() {
     setStatusMessage('Syncing official policy feeds and refreshing the dashboard...')
 
     try {
-      const response = await fetch(apiUrl('/ingestion/run'), {
+      const response = await fetch('/api/ingestion/run', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       })
@@ -227,7 +227,7 @@ export default function AnalysisPage() {
     setError(null)
 
     try {
-      const response = await fetch(apiUrl('/query'), {
+      const response = await fetch('/api/query', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -272,7 +272,7 @@ export default function AnalysisPage() {
     formData.append('user_profile_json', JSON.stringify(userProfile || {}))
 
     try {
-      const response = await fetch(apiUrl('/upload'), {
+      const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
       })
@@ -385,8 +385,8 @@ export default function AnalysisPage() {
       <main className="dashboard-layout">
         <section className="hero-panel">
           <div className="hero-copy">
-            <p className="eyebrow">English-in, localized-out workflow</p>
-            <h2>Ask in English. Get policy interpretation in your preferred language.</h2>
+            <p className="eyebrow">Multilingual-in, localized-out workflow</p>
+            <h2>Ask in your selected language. Get policy interpretation in the same language.</h2>
             <p className="hero-text">{personalizationHint}</p>
             <div className="status-strip">
               <Sparkles size={16} />
@@ -665,7 +665,7 @@ export default function AnalysisPage() {
 
                       <textarea
                         className="query-input"
-                        placeholder="Ask in English only. Example: What obligations does this bill create for small businesses in my sector?"
+                        placeholder="Ask in your selected language. Example: What obligations does this bill create for small businesses in my sector?"
                         value={query}
                         onChange={(event) => setQuery(event.target.value)}
                         onKeyDown={handleQueryKeyDown}
@@ -673,7 +673,7 @@ export default function AnalysisPage() {
 
                       <div className="query-toolbar query-toolbar-wrap">
                         <span>
-                          Query is English-only. Output is translated after analysis.
+                          Query is translated to English for analysis. Output is returned in your selected language.
                         </span>
                         <button
                           className="btn btn-secondary"
@@ -737,14 +737,6 @@ export default function AnalysisPage() {
                             </div>
 
                             <div className="answer-copy">{result.explanation}</div>
-
-                            {result.explanation_english &&
-                              selectedLanguage !== 'en' && (
-                                <div className="answer-copy answer-copy-muted">
-                                  <strong>English original:</strong>{' '}
-                                  {result.explanation_english}
-                                </div>
-                              )}
 
                             <div className="reference-row">
                               {(result.references || []).map((reference) => (

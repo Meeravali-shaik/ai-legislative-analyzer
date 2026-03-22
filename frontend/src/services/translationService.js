@@ -1,5 +1,3 @@
-import { apiUrl } from './api'
-
 const INDIAN_LANGUAGES = {
   en: 'English',
   as: 'Assamese',
@@ -45,7 +43,7 @@ class TranslationService {
 
     try {
       // Send translation request to backend
-      const response = await fetch(apiUrl('/translate'), {
+      const response = await fetch('/api/translate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

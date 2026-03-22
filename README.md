@@ -85,52 +85,6 @@ Open `http://localhost:3000`.
 
 The frontend proxies `/api/*` → `http://localhost:8000/*` via Vite.
 
-## Deploy (Vercel)
-This repo is a **monorepo** (frontend + FastAPI backend). Vercel is a great fit for the **frontend**.
-
-Because the backend uses Chroma persistence + ML models (and can take longer than typical serverless timeouts), the most reliable setup is:
-- Deploy **frontend** on Vercel
-- Deploy **backend** on a long-running host (Render / Railway / VM)
-
-### 1) Deploy the backend (recommended)
-Deploy the FastAPI app on any host that supports long-running Python services.
-
-Start command (from the repo root):
-- `python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000`
-
-Make sure your backend is publicly reachable, e.g.:
-- `https://your-backend.example.com`
-
-### 2) Deploy the frontend on Vercel
-1. Push this repo to GitHub (done).
-2. In Vercel: **New Project** → import `ai-legislative-analyzer`.
-3. In **Project Settings**:
-  - **Root Directory**: `frontend`
-  - **Build Command**: `npm run build`
-  - **Output Directory**: `dist`
-4. Add an Environment Variable (Vercel → Project → Settings → Environment Variables):
-  - `VITE_API_BASE` = `https://your-backend.example.com`
-    - No trailing slash.
-5. Deploy.
-
-After this, the frontend will call the backend using `VITE_API_BASE` in production.
-
-### Backend on Vercel (practical option: proxy)
-Running this Python backend *directly* on Vercel serverless is usually not reliable because it includes heavy native dependencies (`opencv-python`, `pytesseract`), persistent Chroma storage, and model downloads.
-
-Instead, this repo includes a Vercel Serverless Function proxy at:
-- `api/[...path].js`
-
-That means your deployed Vercel app can serve:
-- Frontend (static)
-- `/api/*` (serverless proxy) → forwards to your real backend host
-
-To use it:
-1. Deploy the **real backend** to Render/Railway/VM.
-2. In Vercel → Project → Settings → Environment Variables:
-  - `BACKEND_URL` = `https://your-backend.example.com`
-3. Keep `VITE_API_BASE` **unset** (or empty) so the frontend uses same-origin `/api/*`.
-
 ## Environment variables
 Create a `.env` file (repo root) or set env vars in your shell.
 

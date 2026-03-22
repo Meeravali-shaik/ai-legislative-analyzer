@@ -182,5 +182,75 @@
     "retrieved_original_tokens": 129,
     "retrieved_compressed_tokens": 8,
     "retrieved_compression_ratio": 16.125
+  },
+  {
+    "timestamp": "2026-03-22T16:38:56.554075+00:00",
+    "document_id": "35468e45-f11f-44e2-a1a8-ccb7d9ee3929",
+    "document_title": "It Act 2000 Updated",
+    "query": "how this  bill affect me",
+    "confidence": 0.2611003518104553,
+    "cached": false,
+    "token_metrics": {
+      "query_tokens_estimate": 5,
+      "context_tokens_estimate": 13,
+      "system_prompt_tokens_estimate": 292,
+      "user_prompt_tokens_estimate": 231,
+      "total_prompt_tokens_estimate": 523,
+      "provider_prompt_tokens": 628,
+      "provider_completion_tokens": 242,
+      "response_tokens_estimate": 250
+    },
+    "information_density": {
+      "value_units": 9.65,
+      "prompt_plus_response_tokens": 773,
+      "value_per_token": 0.012484,
+      "density_per_1k_tokens": 12.48,
+      "signals": {
+        "summary_present": false,
+        "breakdown_bullets": 3,
+        "stakeholder_mentions": 3,
+        "legal_signal_hits": 1,
+        "reference_count": 0,
+        "citation_count": 1
+      }
+    },
+    "retrieved_original_tokens": 144,
+    "retrieved_compressed_tokens": 13,
+    "retrieved_compression_ratio": 11.0769
+  },
+  {
+    "timestamp": "2026-03-22T16:59:29.819122+00:00",
+    "document_id": "b3f38729-0455-4261-aa85-2d199cf7af3f",
+    "document_title": "It Act 2000 Updated",
+    "query": "how this bill afeects me",
+    "confidence": 0.23559260368347168,
+    "cached": false,
+    "token_metrics": {
+      "query_tokens_estimate": 5,
+      "context_tokens_estimate": 8,
+      "system_prompt_tokens_estimate": 292,
+      "user_prompt_tokens_estimate": 229,
+      "total_prompt_tokens_estimate": 521,
+      "provider_prompt_tokens": 627,
+      "provider_completion_tokens": 197,
+      "response_tokens_estimate": 196
+    },
+    "information_density": {
+      "value_units": 1.6,
+      "prompt_plus_response_tokens": 717,
+      "value_per_token": 0.002232,
+      "density_per_1k_tokens": 2.23,
+      "signals": {
+        "summary_present": false,
+        "breakdown_bullets": 0,
+        "stakeholder_mentions": 0,
+        "legal_signal_hits": 0,
+        "reference_count": 0,
+        "citation_count": 1
+      }
+    },
+    "retrieved_original_tokens": 88,
+    "retrieved_compressed_tokens": 8,
+    "retrieved_compression_ratio": 11.0
   }
 ]
