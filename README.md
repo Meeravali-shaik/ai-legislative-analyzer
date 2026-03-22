@@ -115,6 +115,22 @@ Make sure your backend is publicly reachable, e.g.:
 
 After this, the frontend will call the backend using `VITE_API_BASE` in production.
 
+### Backend on Vercel (practical option: proxy)
+Running this Python backend *directly* on Vercel serverless is usually not reliable because it includes heavy native dependencies (`opencv-python`, `pytesseract`), persistent Chroma storage, and model downloads.
+
+Instead, this repo includes a Vercel Serverless Function proxy at:
+- `api/[...path].js`
+
+That means your deployed Vercel app can serve:
+- Frontend (static)
+- `/api/*` (serverless proxy) → forwards to your real backend host
+
+To use it:
+1. Deploy the **real backend** to Render/Railway/VM.
+2. In Vercel → Project → Settings → Environment Variables:
+  - `BACKEND_URL` = `https://your-backend.example.com`
+3. Keep `VITE_API_BASE` **unset** (or empty) so the frontend uses same-origin `/api/*`.
+
 ## Environment variables
 Create a `.env` file (repo root) or set env vars in your shell.
 
